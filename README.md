@@ -1,8 +1,8 @@
 # dynamo-store
 
-[![Downloads](https://img.shields.io/badge/objectpath--ng-downloads-brightgreen.svg)](https://pypi.python.org/pypi/dynamo-store/)
+[![Downloads](https://img.shields.io/badge/dynamo--store-downloads-brightgreen.svg)](https://pypi.python.org/pypi/dynamo-store/)
 [![License](https://img.shields.io/badge/license-GPLv2-blue.svg)](https://pypi.python.org/pypi/dynamo-store/)
-[![Build Status](https://travis-ci.org/objectpath/ObjectPath.svg?branch=master)](https://travis-ci.org/objectpath/dynamo-store)
+[![Build Status](https://travis-ci.org/GusBricker/dynamo-store.svg?branch=master)](https://travis-ci.org/GusBricker/dynamo-store)
 
 dynamo-store is a Python library designed to make multi-sharded data structure storage in DynamoDB seamless.
 
