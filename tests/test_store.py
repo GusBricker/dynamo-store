@@ -1,8 +1,9 @@
 from dynamo_store.store import DyStore
 import pytest
 from copy import deepcopy
+import sys
 
-test_pk = '123'
+test_pk = ".".join([str(x) for x in sys.version_info[0:3]])
 root_table_name = 'DynamoStoreRootDB'
 root_key_name = 'ID'
 

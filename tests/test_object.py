@@ -3,8 +3,10 @@ from dynamo_store.object import DyObject
 import pytest
 from uuid import uuid4
 from copy import deepcopy
+import sys
 
-test_pk = '123'
+test_pk = ".".join([str(x) for x in sys.version_info[0:3]])
+
 root_table_name = 'DynamoStoreRootDB'
 root_key_name = 'ID'
 
