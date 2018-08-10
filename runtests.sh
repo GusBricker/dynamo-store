@@ -1,4 +1,4 @@
 #!/bin/bash
 
 export PYTHONPATH=$(pwd)
-pytest -vv -s tests
+python3 tests/__init__.py
