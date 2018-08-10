@@ -1,0 +1,20 @@
+language: python
+python:
+- '3.4'
+- '3.5'
+- '3.6'
+install:
+- pip install -r requirements.txt
+- pip install pytest
+script:
+- runtests.sh
+deploy:
+  provider: pypi
+  user: GusBricker
+  password:
+    secure: "nsH+dqE2i/toKjkeOoMKbWhULoFGy1FNk7+yx4dcRICQf9A6VkcTYKZg0xuDVsca//31hcXzD4qZjbKLkRmQB3sNFP+2cEJSUz0aBMtyBX1Sw6L1mbezjMGo9JKuPJCb3eDcCG0+sE8t1Ar8NJjeQiTw5k0nc+pFEO8bkCyZTY1V/XZEy0A7Ookw97aPjSmt/MUHngf22LJfps5Y01mZbcK6ulyrYz1rD2kSp9YFUD+mh1i1KSBtCqxHWD2cMuKRPn/4C4MyvstmT+POFu0bcSAXIjnLRb6tS6p3Nb2Rg4vpjZj7gJbrtAtqvuT6lfjFITfim0W71HVWAr2l5xbW7P/gmi4Z3mnwcYQGK2bsVvTMqQB88eRChu62Km0ZnNleNkABVXI1cSR9qD5W8amhzJlQ2cqZTUk9errz+lIjHaVFXYrIBqWmNF0xh5hEUfKIPFQcKfM4Axc/tkDUA7p7oiLtutrKHIVCt5INN79lJZw1aUsOZ4kecXSBNTUxlE+29h3CGPIqHbKFWUzv5+qbiKkRewP9JynwCZZ1XbkpojD4xHIoxcW72Jjr8vfRAMz5hSelGQmBWPyQ0dL79BNLTMpjcxOG4Xx3WifUBBec+jk93SwS/t/Id4W/aP5EeDNZeoJ/bHoGkR9Q1kKQlduGozfz4cskoVyaoUOvu72Q8VI="
+  on:
+    tags: true
+    repo: GusBricker/dynamo-store
+    python: '3.6'
+  distributions: sdist bdist_wheel
