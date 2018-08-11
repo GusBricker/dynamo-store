@@ -1,4 +1,3 @@
 #!/bin/bash
 
-export PYTHONPATH=$(pwd)
-python3 tests/__init__.py
+python3 setup.py test
