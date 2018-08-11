@@ -15,7 +15,7 @@ version = version.strip()
 
 setuptools.setup(name='dynamo-store',
       version=version,
-      description='dynamo-store is a Python library designed to make multi-sharded data structure storage in DynamoDB seamless.',
+      description='dynamo-store is designed to make multi-sharded data storage in DynamoDB seamless',
       long_description=long_description,
       long_description_content_type="text/markdown",
       url='https://github.com/GusBricker/dynamo-store',

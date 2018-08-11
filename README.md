@@ -4,14 +4,32 @@
 [![License](https://img.shields.io/badge/license-GPLv2-blue.svg)](https://pypi.python.org/pypi/dynamo-store/)
 [![Build Status](https://travis-ci.org/GusBricker/dynamo-store.svg?branch=master)](https://travis-ci.org/GusBricker/dynamo-store)
 
-dynamo-store is a Python library designed to make multi-sharded data structure storage in DynamoDB seamless.
+dynamo-store is designed to make multi-sharded data storage in DynamoDB seamless.
 
 Out of the box it supports:
 - Automatic sharding of child dictionaries into other tables (useful for getting around 400KB limit of DyanmoDB)
 - Encryption of data at rest using 128bit AES_CBC
 - Automagic serialization of objects to tables
 
-## Example DyStore usage
+## Documentation
+
+#### DyStore
+DyStore represents a DynamoDB table. The structure of your tables should be represented with DyStore objects, including paths to shards in each table. The DyStore object stores enough information in the tables when serialized to allow recreation of DyStore objects to make life easier in some cases. This means once a object is written to a DyStore, it can be reconstructed from stored metadata in the table.
+
+#### DyObject
+DyObject represents an object in a DyStore. They allow seemless serialization of Python objects to a DynamoDB table with minimal extra code. The following class variables must be set when inheriting DyObject:
+- *TABLE_NAME* = 'Shard1'       # Table to save this shard to in AWS
+- *REGION_NAME* = 'us-east-2'   # Region to sav eto in AWS
+- *PRIMARY_KEY_NAME* = 'IDX'    # Primary key name to use
+- *PATH* = '$.birth_details'    # Path in parent object or None if is root object
+
+#### Config Loading
+The `config_loader(config, data)` is a callback that is used in DyStore and DyObject calls to control certain operations of dynamo-store. The first parameter `config` specifies which configuration item is being queried, and the second parameter `data` is context sensitive data for the call.
+
+The `config` parameter will be one of the `CONFIG_LOADER_*` class variables defined in DyStore or DyObject, they are documented in the API documentation below.
+
+
+#### Example DyStore usage
 
 ```
 from dynamo_store.store import DyStore
@@ -54,7 +72,7 @@ path = root_store().read_path(key, "location.country")
 root_store().delete(key)
 ```
 
-## Example DyObject usage
+#### Example DyObject usage
 
 ```
 class BirthDetails(DyObject):
@@ -129,7 +147,7 @@ print(o.birth_details.hospital)
 ```
 
 
-### DyStore API
+#### DyStore API
 ```
 class DyStore(object):
     """
@@ -216,7 +234,7 @@ class DyStore(object):
         """
 ```
 
-### DyObject API
+#### DyObject API
 ```
 class DyObject(object):
     """
