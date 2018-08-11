@@ -7,9 +7,13 @@ def read(*rnames):
 
 long_description = read('README.md')
 
-version = subprocess.run('git describe --tags', shell=True).stdout
+version = None
+try:
+    version = subprocess.check_output('git describe --tags', shell=True, universal_newlines=True)
+except:
+    pass
 version = os.environ.get('TRAVIS_TAG', version)
-if version and 'fatal' in version or not version:
+if not version:
     version = 'dev'
 version = version.strip()
 
