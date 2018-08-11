@@ -19,7 +19,7 @@ setup(name='dynamo-store',
       author='Chris Lapa',
       author_email='chris@lapa.com.au',
       license='GPLv2',
-      packages=['dynamo-store'],
+      packages=['dynamo_store'],
       keywords="dynamo, store, JSON, shard, encryption, dynamodb, aws",
       classifiers=[
           "Development Status :: 4 - Beta",
