@@ -1,25 +1,28 @@
 import os
-from setuptools import setup
+import setuptools
+import subprocess
 
 def read(*rnames):
     return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
-long_description = (
-    read('README.md')
-    + '\n' +
-    'Download\n'
-    '********\n'
-    )
+long_description = read('README.md')
 
-setup(name='dynamo-store',
-      version=os.environ.get('TRAVIS_TAG', 'dev').strip(),
+version = subprocess.run('git describe --tags', shell=True).stdout
+version = os.environ.get('TRAVIS_TAG', version)
+if version and 'fatal' in version or not version:
+    version = 'dev'
+version = version.strip()
+
+setuptools.setup(name='dynamo-store',
+      version=version,
       description='dynamo-store is a Python library designed to make multi-sharded data structure storage in DynamoDB seamless.',
       long_description=long_description,
-      url='http://github.com/GusBricker/dynamo-store',
+      long_description_content_type="text/markdown",
+      url='https://github.com/GusBricker/dynamo-store',
       author='Chris Lapa',
       author_email='chris@lapa.com.au',
       license='GPLv2',
-      packages=['dynamo_store'],
+      packages=setuptools.find_packages(),
       keywords="dynamo, store, JSON, shard, encryption, dynamodb, aws",
       classifiers=[
           "Development Status :: 4 - Beta",
