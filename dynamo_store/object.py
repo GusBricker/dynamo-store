@@ -25,6 +25,16 @@ class DyObject(object):
     PATH = None
 
     """
+    Config loader callable to use when config queries are made
+    """
+    CONFIG_LOADER = None
+
+    """
+    Variable names to ignore during serialization
+    """
+    IGNORE_LIST = []
+
+    """
     Invoked on object load when class cant be determined.
     config_loader(DyObject.CONFIG_LOADER_DICT_TO_KEY, {'key': key, 'value': value})
     :param key: DyObject.CONFIG_LOADER_DICT_TO_CLASS
@@ -36,19 +46,22 @@ class DyObject(object):
     def __init__(self):
         self.__primary_key = None
 
-    @property
-    def store(self):
-        return DyStore(table_name=self.TABLE_NAME,
-                       primary_key_name=self.PRIMARY_KEY_NAME,
-                       path=self.PATH,
-                       region=self.REGION_NAME)
+    @classmethod
+    def store(cls):
+        return DyStore(table_name=cls.TABLE_NAME,
+                       primary_key_name=cls.PRIMARY_KEY_NAME,
+                       path=cls.PATH,
+                       region=cls.REGION_NAME)
 
     def to_dict(self):
         d = {'__class__': self.__class__.__qualname__,
              '__module__': self.__module__}
         for name in dir(self):
+            if name in self.IGNORE_LIST:
+                continue
+
             value = getattr(self, name)
-            if name.startswith('__') or callable(value) or name == 'store':
+            if name.startswith('__') or callable(value):
                 continue
 
             if isinstance(value, DyObject):
@@ -57,9 +70,14 @@ class DyObject(object):
                 d[name] = value
         return d
 
-    @staticmethod
-    def from_dict(obj, data, config_loader=None):
+    @classmethod
+    def from_dict(cls, data, config_loader=None):
+        obj = cls()
+
         for key, value in data.items():
+            if key in cls.IGNORE_LIST:
+                continue
+
             if isinstance(value, dict):
                 if value.get('__class__') and value.get('__module__'):
                     klass = value['__class__']
@@ -67,15 +85,22 @@ class DyObject(object):
                     module = importlib.import_module(module)
                     class_ = getattr(module, klass)
                     logger.debug('Instantiating: %s' % class_)
-                    child_obj = class_()
-                    class_.from_dict(child_obj, value, config_loader=config_loader)
+                    child_obj = class_.from_dict(value, config_loader=config_loader)
                     setattr(obj, key, child_obj)
                 elif config_loader and callable(config_loader):
                     class_ = config_loader(DyObject.CONFIG_LOADER_DICT_TO_CLASS, {'key': key, 'value': value})
+
                     if class_ and issubclass(class_, DyObject):
                         logger.debug('Instantiating: %s' % class_)
-                        child_obj = class_()
-                        class_.from_dict(child_obj, value, config_loader=config_loader)
+                        child_obj = class_.from_dict(value, config_loader=config_loader)
+                        setattr(obj, key, child_obj)
+                    else:
+                        setattr(obj, key, value)
+                elif cls.CONFIG_LOADER and callable(cls.CONFIG_LOADER):
+                    class_ = cls.CONFIG_LOADER(DyObject.CONFIG_LOADER_DICT_TO_CLASS, {'key': key, 'value': value})
+                    if class_ and issubclass(class_, DyObject):
+                        logger.debug('Instantiating: %s' % class_)
+                        child_obj = class_.from_dict(value, config_loader=config_loader)
                         setattr(obj, key, child_obj)
                     else:
                         setattr(obj, key, value)
@@ -83,6 +108,7 @@ class DyObject(object):
                     setattr(obj, key, value)
             elif key not in ['__class__', '__module__']:
                 setattr(obj, key, value)
+        return obj
 
     def save(self, primary_key=None, config_loader=None):
         """
@@ -96,7 +122,7 @@ class DyObject(object):
             if hasattr(self, "__primary_key") and self.__primary_key:
                 primary_key = self.__primary_key
 
-        key = self.store.write(d, primary_key=primary_key, config_loader=config_loader)
+        key = self.store().write(d, primary_key=primary_key, config_loader=config_loader)
         if key:
             self.__primary_key = key
 
@@ -111,9 +137,8 @@ class DyObject(object):
         :param config_loader: Config loader to be used: config_loader(config, data) returns setting
         :returns: cls object
         """
-        obj = cls()
-        success, data = obj.store.read(primary_key, config_loader=config_loader)
+        success, data = cls.store().read(primary_key, config_loader=config_loader)
         if not success:
             raise Exception('Couldnt read from store using pk: %s' % primary_key)
-        cls.from_dict(obj, data, config_loader=config_loader)
+        obj = cls.from_dict(data, config_loader=config_loader)
         return obj

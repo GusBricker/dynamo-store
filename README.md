@@ -18,15 +18,19 @@ DyStore represents a DynamoDB table. The structure of your tables should be repr
 
 #### DyObject
 DyObject represents an object in a DyStore. They allow seemless serialization of Python objects to a DynamoDB table with minimal extra code. The following class variables must be set when inheriting DyObject:
-- *TABLE_NAME* = 'Shard1'       # Table to save this shard to in AWS
-- *REGION_NAME* = 'us-east-2'   # Region to sav eto in AWS
-- *PRIMARY_KEY_NAME* = 'IDX'    # Primary key name to use
-- *PATH* = '$.birth_details'    # Path in parent object or None if is root object
+- *TABLE_NAME* = 'Shard1'           # Table to save this shard to in AWS
+- *REGION_NAME* = 'us-east-2'       # Region to sav eto in AWS
+- *PRIMARY_KEY_NAME* = 'IDX'        # Primary key name to use
+- *PATH* = '$.birth_details'        # Path in parent object or None if is root object
+- *IGNORE_LIST* = `[]`              # Variables to ignore during serialisation
+- *CONFIG_LOADER* = config_loader() # Class level config loader to prevent having to pass into `save()` and `load()`
 
 #### Config Loading
 The `config_loader(config, data)` is a callback that is used in DyStore and DyObject calls to control certain operations of dynamo-store. The first parameter `config` specifies which configuration item is being queried, and the second parameter `data` is context sensitive data for the call.
 
 The `config` parameter will be one of the `CONFIG_LOADER_*` class variables defined in DyStore or DyObject, they are documented in the API documentation below.
+
+DyObject supports both config_loader passed into `save()` and `load()` as well as a class level config loader using the CONFIG_LOADER class variable. The passed in config loader takes precendence over class variable instance.
 
 
 #### Example DyStore usage
@@ -259,6 +263,16 @@ class DyObject(object):
     PATH = None
 
     """
+    Config loader callable to use when config queries are made
+    """
+    CONFIG_LOADER = None
+
+    """
+    Variable names to ignore during serialization
+    """
+    IGNORE_LIST = []
+
+    """
     Invoked on object load when class cant be determined.
     config_loader(DyObject.CONFIG_LOADER_DICT_TO_KEY, {'key': key, 'value': value})
     :param key: DyObject.CONFIG_LOADER_DICT_TO_CLASS
@@ -272,6 +286,7 @@ class DyObject(object):
         Saves this object to the store.
         :param primary_key: Primary key to use.
         :param config_loader: Config loader to be used: config_loader(config, data) returns setting
+        A class wide config loader can also be set, however the passed in config loader takes preference.
         :returns: key of object written
         """
 
@@ -282,6 +297,7 @@ class DyObject(object):
         :param cls: Class to instantiate
         :param primary_key: Primary key of object to load.
         :param config_loader: Config loader to be used: config_loader(config, data) returns setting
+        A class wide config loader can also be set, however the passed in config loader takes preference.
         :returns: cls object
         """
 ```

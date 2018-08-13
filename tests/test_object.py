@@ -64,12 +64,14 @@ class Base(DyObject):
     TABLE_NAME = 'DynamoStoreRootDB'
     REGION_NAME = 'us-east-2'
     PRIMARY_KEY_NAME = 'ID'
+    IGNORE_LIST = ['address']
 
     def __init__(self):
         self.firstname = None
         self.lastname = None
         self.location = Location()
         self.birth_details = BirthDetails()
+        self.address = None
 
 def loader1(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
@@ -85,6 +87,7 @@ def loader1(config, data):
 
 def test_can_write_read_objects(root_store, base_item):
     orig = Base()
+    orig.address = '123 fake st'
     orig.firstname = 'john'
     orig.lastname = 'smith'
     orig.location.city = 'Osaka'
@@ -96,6 +99,7 @@ def test_can_write_read_objects(root_store, base_item):
     key = orig.save(config_loader=loader1)
 
     o = Base.load(key, config_loader=loader1)
+    assert o.address == None
     assert o.firstname == 'john'
     assert o.lastname == 'smith'
     assert isinstance(o.location, Location)
@@ -135,6 +139,39 @@ def test_can_guess_objects(root_store, base_item):
     assert key
 
     o = Base.load(key, config_loader=loader2)
+    assert o.address == None
+    assert o.firstname == 'john'
+    assert o.lastname == 'smith'
+    assert isinstance(o.location, Location)
+    assert o.location.city == 'Osaka'
+    assert o.location.country == 'Japan'
+    assert isinstance(o.location.geolocation, GeoLocation)
+    assert o.location.geolocation.lattitude == '90.00'
+    assert o.location.geolocation.longitude == '90.00'
+    assert isinstance(o.birth_details, BirthDetails)
+    assert o.birth_details.dob == '12/2/1995'
+    assert o.birth_details.hospital == 'Kosei Nenkin'
+
+class BaseInternalLoader(DyObject):
+    TABLE_NAME = 'DynamoStoreRootDB'
+    REGION_NAME = 'us-east-2'
+    PRIMARY_KEY_NAME = 'ID'
+    IGNORE_LIST = ['address']
+    CONFIG_LOADER = loader2
+
+    def __init__(self):
+        self.firstname = None
+        self.lastname = None
+        self.location = Location()
+        self.birth_details = BirthDetails()
+        self.address = None
+
+def test_can_guess_objects_with_internal_loader(root_store, base_item):
+    key = root_store.write(deepcopy(base_item), primary_key=test_pk)
+    assert key
+
+    o = BaseInternalLoader.load(key, config_loader=loader2)
+    assert o.address == None
     assert o.firstname == 'john'
     assert o.lastname == 'smith'
     assert isinstance(o.location, Location)
