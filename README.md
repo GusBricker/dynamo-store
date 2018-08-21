@@ -17,13 +17,15 @@ Out of the box it supports:
 DyStore represents a DynamoDB table. The structure of your tables should be represented with DyStore objects, including paths to shards in each table. The DyStore object stores enough information in the tables when serialized to allow recreation of DyStore objects to make life easier in some cases. This means once a object is written to a DyStore, it can be reconstructed from stored metadata in the table.
 
 #### DyObject
-DyObject represents an object in a DyStore. They allow seemless serialization of Python objects to a DynamoDB table with minimal extra code. The following class variables must be set when inheriting DyObject:
+DyObject represents an object in a DyStore. It relies on [jsonmodels](https://jsonmodels.readthedocs.io/en/latest/readme.html) to control how your object will serialize to JSON which will ultimately end up in your DynamoDB table.
+
+The root and shard DyObjects should implement the following class variables when inheriting DyObject:
 - *TABLE_NAME* = 'Shard1'           # Table to save this shard to in AWS
 - *REGION_NAME* = 'us-east-2'       # Region to sav eto in AWS
 - *PRIMARY_KEY_NAME* = 'IDX'        # Primary key name to use
-- *PATH* = '$.birth_details'        # Path in parent object or None if is root object
-- *IGNORE_LIST* = `[]`              # Variables to ignore during serialisation
+- *IGNORE_LIST* = `[]`              # Variables names to ignore during serialisation
 - *CONFIG_LOADER* = config_loader() # Class level config loader to prevent having to pass into `save()` and `load()`
+Otherwise the above class variables are all optional.
 
 #### Config Loading
 The `config_loader(config, data)` is a callback that is used in DyStore and DyObject calls to control certain operations of dynamo-store. The first parameter `config` specifies which configuration item is being queried, and the second parameter `data` is context sensitive data for the call.
@@ -79,36 +81,36 @@ root_store().delete(key)
 #### Example DyObject usage
 
 ```
+from dynamo_store.object import DyObject
+from dynamo_store.store import DyStore
+from jsonmodels import fields
+
 class BirthDetails(DyObject):
     TABLE_NAME = 'Shard1'       # Table to save this shard to in AWS
     REGION_NAME = 'us-east-2'   # Region to sav eto in AWS
     PRIMARY_KEY_NAME = 'IDX'    # Primary key name to use
-    PATH = '$.birth_details'    # Path in Root object
 
-    def __init__(self):
-        self.hospital = None
-        self.dob = None
+    hospital = fields.StringField()
+    dob = fields.StringField()
 
 class Location(DyObject):
     TABLE_NAME = 'Shard2'       # Table to save this shard to in AWS
     REGION_NAME = 'us-east-2'   # Region to save to in AWS
     PRIMARY_KEY_NAME = 'IDX'    # Primary key name to use
-    PATH = '$.location'         # Path in Root object
 
-    def __init__(self):
-        self.city = None
-        self.country = None
+    city = fields.StringField()
+    country = fields.StringField()
+    geolocation = fields.EmbeddedField(GeoLocation)
 
 class Root(DyObject):
     TABLE_NAME = 'Root'         # Table to save to in AWS
     REGION_NAME = 'us-east-2'   # Region to save to in AWS
     PRIMARY_KEY_NAME = 'ID'     # Primary key name to use
 
-    def __init__(self):
-        self.firstname = None
-        self.lastname = None
-        self.location = Location()
-        self.birth_details = BirthDetails()
+    firstname = fields.StringField()
+    lastname = fields.StringField()
+    location = fields.EmbeddedField(Location)
+    birth_details = fields.EmbeddedField(BirthDetails)
 
 def loader(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
@@ -257,12 +259,6 @@ class DyObject(object):
     PRIMARY_KEY_NAME = None
 
     """
-    If this object is a child of another DyObject, then this is
-    the json path to this child from its parent
-    """
-    PATH = None
-
-    """
     Config loader callable to use when config queries are made
     """
     CONFIG_LOADER = None
@@ -281,6 +277,14 @@ class DyObject(object):
     """
     CONFIG_LOADER_DICT_TO_CLASS = 'dict'
 
+    def delete(self, primary_key=None, config_loader=None):
+        """
+        Delete an object from the store.
+        :param primary_key: Primary key to use, (optional: value passed in will be stored in instance for future use).
+        :param config_loader: Config loader to be used: config_loader(config, data) returns setting
+        :returns: True if successful, False otherwise
+        """
+
     def save(self, primary_key=None, config_loader=None):
         """
         Saves this object to the store.
@@ -297,6 +301,7 @@ class DyObject(object):
         :param cls: Class to instantiate
         :param primary_key: Primary key of object to load.
         :param config_loader: Config loader to be used: config_loader(config, data) returns setting
+        :param validate: Enable JSON Models field validation
         A class wide config loader can also be set, however the passed in config loader takes preference.
         :returns: cls object
         """
