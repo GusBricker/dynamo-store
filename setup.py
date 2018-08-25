@@ -28,7 +28,7 @@ setuptools.setup(name='dynamo-store',
       license='GPLv2',
       python_requires='>=3',
       packages=setuptools.find_packages(),
-      install_requires=['jsonpath-nn', 'boto3', 'pycrypto', 'jsonmodels'],
+      install_requires=['jsonpath-ng', 'boto3', 'pycrypto', 'jsonmodels'],
       keywords="dynamo, store, JSON, shard, encryption, dynamodb, aws",
       classifiers=[
           "Development Status :: 4 - Beta",
