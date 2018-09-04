@@ -28,8 +28,10 @@ def base_item():
 
 def loader(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in data
+        assert 'root' in data
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
-        if data in encrypted_paths:
+        if data['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
         return test_pk

@@ -65,8 +65,10 @@ class Base(DyObject):
 
 def loader1(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in data
+        assert 'root' in data
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
-        if data in encrypted_paths:
+        if data['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
         return test_pk
@@ -142,8 +144,10 @@ def test_can_write_read_objects(root_store, base_item):
 
 def loader2(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in data
+        assert 'root' in data
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
-        if data in encrypted_paths:
+        if data['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
         return test_pk
@@ -226,8 +230,10 @@ class BaseMultipleLocation(DyObject):
 def loader3(config, data):
     print(config)
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in data
+        assert 'root' in data
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
-        if data in encrypted_paths:
+        if data['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
         return False
@@ -302,9 +308,11 @@ class BaseMixedShards(DyObject):
 def loader4(config, data):
     print(config)
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in data
+        assert 'root' in data
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country',
                             'firstname', 'lastname', 'info.line', 'info.data']
-        if data in encrypted_paths:
+        if data['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
         return False
