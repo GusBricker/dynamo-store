@@ -40,6 +40,72 @@ def loader(config, data):
 
     return None
 
+def loader_full_encryption(config, data):
+    if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in data
+        assert 'root' in data
+        encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country',
+                           'firstname', 'lastname', 'location.geolocation.longitude', 'location.geolocation.lattitude']
+        if data['path'] in encrypted_paths:
+            return '123kgk132l'
+    elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
+        return test_pk
+    elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
+        return False
+
+    return None
+
+def loader_no_encryption(config, data):
+    if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in data
+        assert 'root' in data
+    elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
+        return test_pk
+    elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
+        return False
+
+    return None
+
+def test_encryption(root_store, base_item):
+    key = root_store.write(deepcopy(base_item), primary_key=test_pk, config_loader=loader_full_encryption)
+    assert key
+
+    success, readback = root_store.read(key, config_loader=loader_no_encryption)
+    assert success
+
+    print('--READ BACK--')
+    print(readback)
+    print('--BASE ITEM--')
+    print(base_item)
+
+    from boto3.dynamodb.types import Binary
+    assert readback != base_item
+    assert isinstance(readback['firstname'], Binary)
+    assert readback['firstname'] != base_item['firstname']
+
+    assert isinstance(readback['lastname'], Binary)
+    assert readback['lastname'] != base_item['lastname']
+
+    assert isinstance(readback['location']['city'], Binary)
+    assert readback['location']['city'] != base_item['location']['city']
+
+    assert isinstance(readback['location']['country'], Binary)
+    assert readback['location']['country'] != base_item['location']['country']
+
+    assert isinstance(readback['location']['geolocation']['lattitude'], Binary)
+    assert readback['location']['geolocation']['lattitude'] != base_item['location']['geolocation']['lattitude']
+
+    assert isinstance(readback['location']['geolocation']['longitude'], Binary)
+    assert readback['location']['geolocation']['longitude'] != base_item['location']['geolocation']['longitude']
+
+    assert isinstance(readback['birth_details']['hospital'], Binary)
+    assert readback['birth_details']['hospital'] != base_item['birth_details']['hospital']
+
+    assert isinstance(readback['birth_details']['dob'], Binary)
+    assert readback['birth_details']['dob'] != base_item['birth_details']['dob']
+
+    assert root_store.delete(key, config_loader=loader_full_encryption)
+
 def test_write_read_delete(root_store, base_item):
     key = root_store.write(deepcopy(base_item), primary_key=test_pk, config_loader=loader)
     assert key
