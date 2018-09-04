@@ -185,12 +185,32 @@ def test_can_guess_objects(root_store, base_item):
     assert o.birth_details.hospital == 'Kosei Nenkin'
     assert o.__primary_key == test_pk
 
+def loader_no_encryption(config, data):
+    if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        return None
+    elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
+        return test_pk
+    elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
+        return False
+    elif config == DyObject.CONFIG_LOADER_DICT_TO_CLASS:
+        # In this case we can just use the dict key to determine what kind of object it is
+        # other cases might require examining the value
+        key = data['key']
+        if key == 'location':
+            return Location
+        elif key == 'birth_details':
+            return BirthDetails
+        elif key == 'geolocation':
+            return GeoLocation
+
+    return None
+
 class BaseInternalLoader(DyObject):
     TABLE_NAME = 'DynamoStoreRootDB'
     REGION_NAME = 'us-east-2'
     PRIMARY_KEY_NAME = 'ID'
     IGNORE_LIST = ['address']
-    CONFIG_LOADER = loader2
+    CONFIG_LOADER = loader_no_encryption
     firstname = fields.StringField()
     lastname = fields.StringField()
     location = fields.EmbeddedField(Location, default=Location())
@@ -201,7 +221,7 @@ def test_can_guess_objects_with_internal_loader(root_store, base_item):
     key = root_store.write(deepcopy(base_item), primary_key=test_pk)
     assert key
 
-    o = BaseInternalLoader.load(key, config_loader=loader2)
+    o = BaseInternalLoader.load(key)
     assert o.address == None
     assert o.firstname == 'john'
     assert o.lastname == 'smith'
