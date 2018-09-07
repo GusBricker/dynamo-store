@@ -28,6 +28,8 @@ class AESCipher(object):
         return data
 
     def _pad(self, s):
+        if not isinstance(s, str):
+            s = str(s)
         return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
 
     @staticmethod
