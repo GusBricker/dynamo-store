@@ -16,6 +16,10 @@ def generate_paths(root_object):
             p = '%s[*]' % path
             root = root_object if isinstance(root_object, dict) else root_object.context
             b = parse(p).find(root)
+
+            logger.debug('%s: [%s]' % (path, type(a.value)))
+            yield a
+
             for c in b:
                 if isinstance(c.value, dict):
                     logger.debug('%s: [%s]' % (str(c.full_path), type(c.value)))

@@ -24,9 +24,10 @@ def test_generate_first_level_list_paths():
                        {'city': 'Bejing', 'country': 'China'}]}
     p = [str(x.full_path) for x in util.generate_paths(d)]
     logger.debug(p)
-    assert len(p) == 6
+    assert len(p) == 7
     assert 'firstname' in p
     assert 'lastname' in p
+    assert 'locations' in p
     assert 'locations.[0].city' in p
     assert 'locations.[0].country' in p
     assert 'locations.[1].city' in p
@@ -39,9 +40,10 @@ def test_generate_second_level_list_paths():
                                    {'city': 'Bejing', 'country': 'China'}]}}
     p = [str(x.full_path) for x in util.generate_paths(d)]
     logger.debug(p)
-    assert len(p) == 6
+    assert len(p) == 7
     assert 'firstname' in p
     assert 'lastname' in p
+    assert 'person.locations' in p
     assert 'person.locations.[0].city' in p
     assert 'person.locations.[0].country' in p
     assert 'person.locations.[1].city' in p
@@ -54,9 +56,10 @@ def test_generate_second_level_non_dict_list_paths():
     logger.debug(d)
     p = [str(x.full_path) for x in util.generate_paths(d)]
     logger.debug(p)
-    assert len(p) == 2
+    assert len(p) == 3
     assert 'firstname' in p
     assert 'lastname' in p
+    assert 'person.locations' in p
 
 def test_generate_second_level_paths():
     d = {'firstname': 'john',
