@@ -85,17 +85,15 @@ class DyStore(object):
             return loader(config, data)
         return None
 
-    def _decrypt_item(self, item, config_loader, root_object, shard_path):
+    def _decrypt(self, root_object, config_loader):
         if not config_loader or not callable(config_loader):
             return
 
-        for encrypted_value in util.generate_paths(root_object, shard_path):
+        for encrypted_value in util.generate_paths(root_object):
             path = str(encrypted_value.full_path)
             key = config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, {'path': path, 'root': root_object})
             if key:
                 cipher = AESCipher(key)
-                if shard_path:
-                    path = util.remove_prefix(path, shard_path + '.')
                 json_path = parse(path)
                 logger.debug('Decrypting item: %s' % path)
                 unencrypted_value = cipher.decrypt(encrypted_value.value)
@@ -104,17 +102,16 @@ class DyStore(object):
                 json_path.update(root_object, unencrypted_value)
                 logger.debug('After: %s' % root_object)
 
-    def _encrypt_item(self, item, config_loader, root_object, shard_path):
+    def _encrypt(self, root_object, config_loader):
         if not config_loader or not callable(config_loader):
             return
-        for unencrypted_value in util.generate_paths(root_object, shard_path):
+        for unencrypted_value in util.generate_paths(root_object):
             path = str(unencrypted_value.full_path)
             key = config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, {'path': path, 'root': root_object})
             if key:
                 cipher = AESCipher(key)
-                if shard_path:
-                    path = util.remove_prefix(path, shard_path + '.')
                 json_path = parse(path)
+                logger.debug('Encrypting item: %s' % path)
                 encrypted_value = cipher.encrypt(unencrypted_value.value)
                 logger.debug('Encrypted item: %s' % path)
                 logger.debug('Before: %s' % root_object)
@@ -233,8 +230,6 @@ class DyStore(object):
             if shard_path:
                 if not parse(shard_path).update(root_object, item):
                     return False, {}
-
-            self._decrypt_item(item, config_loader, root_object, shard_path)
             
             DyStore.from_dict(self, item[DyStore.METADATA_KEY])
 
@@ -259,7 +254,12 @@ class DyStore(object):
         :param config_loader: Config loader to be used: config_loader(config, data) returns setting
         :returns: success, value
         """
-        return self._read(primary_key, resolve_shards=resolve_shards, config_loader=config_loader)
+        success, item = self._read(primary_key, resolve_shards=resolve_shards, config_loader=config_loader)
+
+        if success:
+            self._decrypt(item, config_loader)
+
+        return success, item
 
     def write_path(self, primary_key, path, value, config_loader=None):
         """
@@ -312,8 +312,6 @@ class DyStore(object):
         if not root_object:
             root_object = data
 
-        self._encrypt_item(data, config_loader, root_object, shard_path)
-
         if not self._save_shards(data, config_loader, root_object, shard_path):
             return None
 
@@ -338,6 +336,8 @@ class DyStore(object):
         :param config_loader: Config loader to be used: config_loader(config, data) returns setting
         :returns: primary_key used/generated
         """
+        self._encrypt(data, config_loader)
+
         return self._write(data, primary_key=primary_key, save_shards=save_shards, config_loader=config_loader)
 
     def delete(self, primary_key, delete_shards=True, config_loader=None):
