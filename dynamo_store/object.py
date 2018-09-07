@@ -37,9 +37,6 @@ class DyObject(models.Base):
     :returns: Class to instantiate, None if to keep as dict
     """
     CONFIG_LOADER_DICT_TO_CLASS = 'dict'
-#
-#    def __init__(self):
-#        super().__init__()
 
     @classmethod
     def store(cls, shards, path=None):
