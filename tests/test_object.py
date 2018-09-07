@@ -248,7 +248,6 @@ class BaseMultipleLocation(DyObject):
     address = None
 
 def loader3(config, data):
-    print(config)
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
         assert 'path' in data
         assert 'root' in data
@@ -326,7 +325,6 @@ class BaseMixedShards(DyObject):
     address = None
 
 def loader4(config, data):
-    print(config)
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
         assert 'path' in data
         assert 'root' in data
