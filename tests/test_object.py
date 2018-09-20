@@ -311,6 +311,7 @@ def test_can_write_read_multisharded_object(root_store, base_item):
 class NotAShard(DyObject):
     line = fields.IntField()
     data = fields.StringField()
+    geo = fields.EmbeddedField(GeoLocation, default=GeoLocation())
 
 class BaseMixedShards(DyObject):
     TABLE_NAME = 'DynamoStoreRootDB'
@@ -344,6 +345,7 @@ def test_can_read_write_mixed_shard(root_store, base_item):
     orig.lastname = 'smith'
     orig.info.line = 100
     orig.info.data = 'line data'
+    orig.info.geolocation = GeoLocation(lattitude='34.0', longitude='30.0')
 
     loc1 = Location(geolocation=GeoLocation())
     loc1.city = 'Vienna'
@@ -371,6 +373,9 @@ def test_can_read_write_mixed_shard(root_store, base_item):
     assert isinstance(o.info, NotAShard)
     assert orig.info.line == 100
     assert orig.info.data == 'line data'
+    assert isinstance(o.info.geolocation, GeoLocation)
+    assert orig.info.geolocation.lattitude == '34.0'
+    assert orig.info.geolocation.longitude == '30.0'
 
     assert isinstance(o.locations, list)
     assert len(o.locations) == 2
