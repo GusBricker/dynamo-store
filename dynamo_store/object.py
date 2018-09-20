@@ -157,9 +157,10 @@ class DyObject(models.Base):
             if primary_key:
                 logger.debug('Found existing pk %s' % primary_key)
 
+        cls = self.__class__
         if not config_loader or not callable(config_loader):
-            if self.CONFIG_LOADER and callable(self.CONFIG_LOADER):
-                config_loader = self.CONFIG_LOADER
+            if cls.CONFIG_LOADER and callable(cls.CONFIG_LOADER):
+                config_loader = cls.CONFIG_LOADER
 
         if self.store(shards=shards).delete(d, primary_key, config_loader=config_loader):
             logger.debug('Storing pk %s' % primary_key)
@@ -183,9 +184,10 @@ class DyObject(models.Base):
             if primary_key:
                 logger.debug('Found existing pk %s' % primary_key)
 
+        cls = self.__class__
         if not config_loader or not callable(config_loader):
-            if self.CONFIG_LOADER and callable(self.CONFIG_LOADER):
-                config_loader = self.CONFIG_LOADER
+            if cls.CONFIG_LOADER and callable(cls.CONFIG_LOADER):
+                config_loader = cls.CONFIG_LOADER
 
         key = self.store(shards=shards).write(d, primary_key=primary_key, config_loader=config_loader)
         if key:
