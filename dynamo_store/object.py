@@ -157,6 +157,10 @@ class DyObject(models.Base):
             if primary_key:
                 logger.debug('Found existing pk %s' % primary_key)
 
+        if not config_loader or not callable(config_loader):
+            if self.CONFIG_LOADER and callable(self.CONFIG_LOADER):
+                config_loader = self.CONFIG_LOADER
+
         if self.store(shards=shards).delete(d, primary_key, config_loader=config_loader):
             logger.debug('Storing pk %s' % primary_key)
             setattr(self, '__primary_key', primary_key)
@@ -179,6 +183,10 @@ class DyObject(models.Base):
             if primary_key:
                 logger.debug('Found existing pk %s' % primary_key)
 
+        if not config_loader or not callable(config_loader):
+            if self.CONFIG_LOADER and callable(self.CONFIG_LOADER):
+                config_loader = self.CONFIG_LOADER
+
         key = self.store(shards=shards).write(d, primary_key=primary_key, config_loader=config_loader)
         if key:
             logger.debug('Storing pk %s' % key)
@@ -196,6 +204,10 @@ class DyObject(models.Base):
         :param validate: Enable JSON Models field validation
         :returns: cls object
         """
+        if not config_loader or not callable(config_loader):
+            if cls.CONFIG_LOADER and callable(cls.CONFIG_LOADER):
+                config_loader = cls.CONFIG_LOADER
+
         success, data = cls.store(shards=[]).read(primary_key, config_loader=config_loader)
         if not success:
             raise Exception('Couldnt read from store using pk: %s' % primary_key)
