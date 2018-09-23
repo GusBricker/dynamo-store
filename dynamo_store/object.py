@@ -59,7 +59,6 @@ class DyObject(models.Base):
             value = getattr(self, name)
             if name.startswith('_') or callable(value):
                 continue
-            logger.info(name)
 
             if isinstance(value, list):
                 d[name] = [None] * len(value)

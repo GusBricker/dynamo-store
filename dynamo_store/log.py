@@ -19,7 +19,7 @@ LOG_CONFIG = {
     'loggers': { 
         'dynamo-store': { 
             'handlers': ['c'],
-            'level': logging.DEBUG,
+            'level': logging.INFO,
             'propagate': True
         }
     } 
