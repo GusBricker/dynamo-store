@@ -1,4 +1,3 @@
-import base64
 from boto3.dynamodb.types import Binary
 import hashlib
 from Crypto import Random
@@ -14,13 +13,12 @@ class AESCipher(object):
         raw = self._pad(raw)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return base64.b64encode(iv + cipher.encrypt(raw))
+        return iv + cipher.encrypt(raw)
 
     def decrypt(self, enc):
         if isinstance(enc, Binary):
             enc = enc.value
 
-        enc = base64.b64decode(enc)
         iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         data = self._unpad(cipher.decrypt(enc[AES.block_size:]))
