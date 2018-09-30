@@ -382,7 +382,7 @@ def test_can_read_write_mixed_shard(root_store, base_item):
     orig.lastname = 'smith'
     orig.info.line = 100
     orig.info.data = 'line data'
-    orig.info.geolocation = GeoLocation(lattitude='34.0', longitude='30.0')
+    orig.info.geo = GeoLocation(lattitude='34.0', longitude='30.0')
 
     loc1 = Location(geolocation=GeoLocation())
     loc1.city = 'Vienna'
@@ -408,11 +408,11 @@ def test_can_read_write_mixed_shard(root_store, base_item):
     assert o.firstname == 'john'
     assert o.lastname == 'smith'
     assert isinstance(o.info, NotAShard)
-    assert orig.info.line == 100
-    assert orig.info.data == 'line data'
-    assert isinstance(o.info.geolocation, GeoLocation)
-    assert orig.info.geolocation.lattitude == '34.0'
-    assert orig.info.geolocation.longitude == '30.0'
+    assert o.info.line == 100
+    assert o.info.data == 'line data'
+    assert isinstance(o.info.geo, GeoLocation)
+    assert o.info.geo.lattitude == '34.0'
+    assert o.info.geo.longitude == '30.0'
     assert isinstance(o.lines, list)
     assert len(orig.lines) == 0
 
