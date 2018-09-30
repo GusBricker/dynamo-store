@@ -5,7 +5,6 @@ from uuid import uuid4
 from copy import deepcopy
 import sys
 from jsonmodels import fields
-from jsonpath_ng import jsonpath, parse
 
 test_pk = ".".join([str(x) for x in sys.version_info[0:3]])
 
@@ -354,7 +353,6 @@ class BaseMixedShards(DyObject):
 
 def loader4(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        from dynamo_store.util import logger
         assert 'path' in kwargs
         assert 'data' in kwargs
         encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
@@ -366,7 +364,6 @@ def loader4(config, **kwargs):
                            'locations.value.[1].geolocation.longitude.value',
                            'firstname.value', 'lastname.value', 'info.line.value', 'info.data.value', 'info.value',
                            'lines.value[0].line', 'lines.value[0].data', 'lines.value[1].line', 'lines.value[1].data']
-        logger.info('> %s' % data['path'])
         if kwargs['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
@@ -454,7 +451,6 @@ class BaseDeepMixedShards(DyObject):
 
 def loader5(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        from dynamo_store.util import logger
         assert 'path' in kwargs
         assert 'data' in kwargs
         path = kwargs['path']
@@ -464,9 +460,7 @@ def loader5(config, **kwargs):
                 return None
 
         if path == 'info.value':
-            logger.info('ignored %s' % (path))
             return None
-        logger.info('%s' % (path))
         return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
         return False
