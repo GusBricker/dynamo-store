@@ -434,3 +434,80 @@ def test_can_read_write_mixed_shard(root_store, base_item):
     assert o.birth_details.dob == '15/03/1980'
     assert o.birth_details.hospital == 'Good one'
     assert o.__primary_key == key
+
+class LineInfo(DyObject):
+    number = fields.IntField()
+    geo = fields.EmbeddedField(GeoLocation, default=GeoLocation())
+
+class Line(DyObject):
+    lineinfo = fields.EmbeddedField(LineInfo, default=LineInfo())
+    text = fields.StringField()
+
+class Title(DyObject):
+    lines = fields.EmbeddedField(Line, default=Line())
+
+class BaseDeepMixedShards(DyObject):
+    TABLE_NAME = 'DynamoStoreRootDB'
+    REGION_NAME = 'us-east-2'
+    PRIMARY_KEY_NAME = 'ID'
+    title = fields.EmbeddedField(Title, default=Title())
+    info = fields.ListField(items_types=[Line])
+
+def loader5(config, data):
+    if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in data
+        assert 'root' in data
+        from dynamo_store.util import logger
+        path = data['path']
+        unencrypted_paths = ['__module__', '__class__', '__metatype__']
+        for p in unencrypted_paths:
+            if p in path:
+                return None
+
+        if path == 'info.value':
+            logger.info('ignored %s' % (path))
+            return None
+        logger.info('%s' % (path))
+        return '123kgk132l'
+    elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
+        return False
+
+    return None
+
+def test_can_read_write_deepmixed_shard(root_store, base_item):
+    orig = BaseDeepMixedShards()
+    orig.title.lines.text = 'title'
+    orig.title.lines.lineinfo.number = 0
+    orig.title.lines.lineinfo.geo = GeoLocation(lattitude='34.0', longitude='30.0')
+
+    orig.info.append(Line(text='hello', lineinfo=LineInfo(number=1, geo=GeoLocation(lattitude='54.0', longitude='50.0'))))
+    orig.info.append(Line(text='world', lineinfo=LineInfo(number=2, geo=GeoLocation(lattitude='52.0', longitude='51.0'))))
+
+    key = orig.save(config_loader=loader5)
+    assert orig.__primary_key == key
+
+    o = BaseDeepMixedShards.load(key, config_loader=loader5)
+    assert isinstance(o.title, Title)
+    assert isinstance(o.title.lines, Line)
+    assert isinstance(o.title.lines.lineinfo.geo, GeoLocation)
+    assert o.title.lines.text == 'title'
+    assert o.title.lines.lineinfo.number == 0
+    assert o.title.lines.lineinfo.geo.lattitude == '34.0'
+    assert o.title.lines.lineinfo.geo.longitude == '30.0'
+
+    assert len(o.info) == 2
+    assert isinstance(o.info[0], Line)
+    assert isinstance(o.info[1], Line)
+    assert isinstance(o.info[0].lineinfo, LineInfo)
+    assert isinstance(o.info[1].lineinfo, LineInfo)
+    assert isinstance(o.info[0].lineinfo.geo, GeoLocation)
+    assert isinstance(o.info[1].lineinfo.geo, GeoLocation)
+    assert o.info[0].text == 'hello'
+    assert o.info[1].text == 'world'
+    assert o.info[0].lineinfo.number == 1
+    assert o.info[1].lineinfo.number == 2
+    assert o.info[0].lineinfo.geo.lattitude == '54.0'
+    assert o.info[0].lineinfo.geo.longitude == '50.0'
+    assert o.info[1].lineinfo.geo.lattitude == '52.0'
+    assert o.info[1].lineinfo.geo.longitude == '51.0'
+    assert o.__primary_key == key
