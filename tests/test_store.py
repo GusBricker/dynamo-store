@@ -44,12 +44,12 @@ def complex_item():
                      {'type': 'nl_NL'}]}
     return d
 
-def loader(config, data):
+def loader(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        assert 'path' in data
-        assert 'root' in data
+        assert 'path' in kwargs
+        assert 'data' in kwargs
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
-        if data['path'] in encrypted_paths:
+        if kwargs['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
         return test_pk
@@ -58,14 +58,14 @@ def loader(config, data):
 
     return None
 
-def loader_full_encryption(config, data):
+def loader_full_encryption(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        assert 'path' in data
-        assert 'root' in data
+        assert 'path' in kwargs
+        assert 'data' in kwargs
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country',
                            'firstname', 'lastname', 'location.geolocation.longitude', 'location.geolocation.lattitude',
                            'friends', 'locales.[0].type', 'locales.[1].type', 'locales.[2].type']
-        if data['path'] in encrypted_paths:
+        if kwargs['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
         return test_pk
@@ -74,10 +74,10 @@ def loader_full_encryption(config, data):
 
     return None
 
-def loader_no_encryption(config, data):
+def loader_no_encryption(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        assert 'path' in data
-        assert 'root' in data
+        assert 'path' in kwargs
+        assert 'data' in kwargs
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
         return test_pk
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:

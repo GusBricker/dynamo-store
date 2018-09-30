@@ -35,9 +35,10 @@ class DyObject(models.Base):
 
     """
     Invoked on object load when class cant be determined.
-    config_loader(DyObject.CONFIG_LOADER_DICT_TO_KEY, {'key': key, 'value': value})
-    :param key: DyObject.CONFIG_LOADER_DICT_TO_CLASS
-    :param data: key in parent object, value of dict in object
+    config_loader(DyObject.CONFIG_LOADER_DICT_TO_KEY, key=key, value=value)
+    :param config: DyObject.CONFIG_LOADER_DICT_TO_CLASS
+    :param key: key in parent object
+    :param value: value of dict in object
     :returns: Class to instantiate, None if to keep as dict
     """
     CONFIG_LOADER_DICT_TO_CLASS = 'dict'
@@ -170,14 +171,14 @@ class DyObject(models.Base):
             child_obj = class_.from_dict(value, config_loader=config_loader)
             return child_obj
         elif config_loader and callable(config_loader):
-            class_ = config_loader(DyObject.CONFIG_LOADER_DICT_TO_CLASS, {'key': key, 'value': value})
+            class_ = config_loader(DyObject.CONFIG_LOADER_DICT_TO_CLASS, key=key, value=value)
 
             if class_ and issubclass(class_, DyObject):
                 logger.debug('Instantiating: %s' % class_)
                 child_obj = class_.from_dict(value, config_loader=config_loader)
                 return child_obj
         elif cls.CONFIG_LOADER and callable(cls.CONFIG_LOADER):
-            class_ = cls.CONFIG_LOADER(DyObject.CONFIG_LOADER_DICT_TO_CLASS, {'key': key, 'value': value})
+            class_ = cls.CONFIG_LOADER(DyObject.CONFIG_LOADER_DICT_TO_CLASS, key=key, value=value)
             if class_ and issubclass(class_, DyObject):
                 logger.debug('Instantiating: %s' % class_)
                 child_obj = class_.from_dict(value, config_loader=config_loader)

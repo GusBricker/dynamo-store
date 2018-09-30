@@ -13,8 +13,8 @@ class DyStore(object):
 
     """
     Invoked on writes to allow control of primary key.
-    config_loader(DyStore.CONFIG_LOADER_GENERATE_PK, item)
-    :param key: DyStore.CONFIG_LOADER_GENERATE_PK
+    config_loader(DyStore.CONFIG_LOADER_GENERATE_PK, data=item)
+    :param config: DyStore.CONFIG_LOADER_GENERATE_PK
     :param data: item being written
     :returns: string containing primary key to use, None to use uuid4()
     """
@@ -22,17 +22,18 @@ class DyStore(object):
 
     """
     Invoked on decryption/encryption to control key used.
-    config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, path)
-    :param key: DyStore.CONFIG_LOADER_LOAD_KEY
-    :param data: json path of item being encrypted/decrypted
+    config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, path=path, root=root)
+    :param config: DyStore.CONFIG_LOADER_LOAD_KEY
+    :param path: json path of item being encrypted/decrypted
+    :param data: root object being encrypted/decrypted
     :returns: string containing key to use, None to ignore decryption/encryption
     """
     CONFIG_LOADER_LOAD_KEY = 'key'
 
     """
     Invoked on read/write to control if DyStore metadata should be kept in object.
-    config_loader(DyStore.CONFIG_LOADER_KEEP_METADATA, item)
-    :param key: DyStore.CONFIG_LOADER_KEEP_METADATA
+    config_loader(DyStore.CONFIG_LOADER_KEEP_METADATA, data=item)
+    :param config: DyStore.CONFIG_LOADER_KEEP_METADATA
     :param data: item being read/written
     :returns: bool controlling if metadata should be kept or not
     """
@@ -80,9 +81,9 @@ class DyStore(object):
                 'path': self.path,
                 'shards': shards}
 
-    def _try_invoke_config_loader(self, loader, config, data):
+    def _try_invoke_config_loader(self, loader, config, **kwargs):
         if loader and callable(loader):
-            return loader(config, data)
+            return loader(config, **kwargs)
         return None
 
     def _decrypt(self, root_object, config_loader):
@@ -91,7 +92,7 @@ class DyStore(object):
 
         for encrypted_value in util.generate_paths(root_object):
             path = str(encrypted_value.full_path)
-            key = config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, {'path': path, 'root': root_object})
+            key = config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, path=path, data=root_object)
             if key:
                 cipher = AESCipher(key)
                 json_path = parse(path)
@@ -107,7 +108,7 @@ class DyStore(object):
             return
         for unencrypted_value in util.generate_paths(root_object):
             path = str(unencrypted_value.full_path)
-            key = config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, {'path': path, 'root': root_object})
+            key = config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, path=path, data=root_object)
             if key:
                 cipher = AESCipher(key)
                 json_path = parse(path)
@@ -237,7 +238,7 @@ class DyStore(object):
                 if not self._resolve_shards(item, config_loader, root_object, shard_path):
                     return False, {}
 
-            if self._try_invoke_config_loader(config_loader, DyStore.CONFIG_LOADER_KEEP_METADATA, item) == False:
+            if self._try_invoke_config_loader(config_loader, DyStore.CONFIG_LOADER_KEEP_METADATA, data=item) == False:
                 del item[self._primary_key_name]
                 del item[DyStore.METADATA_KEY]
 
@@ -300,7 +301,7 @@ class DyStore(object):
 
         if not primary_key:
             if config_loader and callable(config_loader):
-                primary_key = config_loader(DyStore.CONFIG_LOADER_GENERATE_PK, data)
+                primary_key = config_loader(DyStore.CONFIG_LOADER_GENERATE_PK, data=data)
             if not primary_key:
                 primary_key = str(uuid4())
 
@@ -321,7 +322,7 @@ class DyStore(object):
             logger.error(e.response['Error']['Message'])
             return None
 
-        if self._try_invoke_config_loader(config_loader, DyStore.CONFIG_LOADER_KEEP_METADATA, data) == False:
+        if self._try_invoke_config_loader(config_loader, DyStore.CONFIG_LOADER_KEEP_METADATA, data=data) == False:
             del data[DyStore.METADATA_KEY]
             del data[self._primary_key_name]
 

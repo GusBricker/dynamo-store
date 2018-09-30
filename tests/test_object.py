@@ -64,10 +64,10 @@ class Base(DyObject):
     birth_details = fields.EmbeddedField(BirthDetails)
     address = None
 
-def loader1(config, data):
+def loader1(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        assert 'path' in data
-        assert 'root' in data
+        assert 'path' in kwargs
+        assert 'data' in kwargs
         encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
                            'locations.value.[0].city.value', 'locations.value.[0].country.value',
                            'locations.value.[1].city.value', 'locations.value.[1].country.value',
@@ -76,7 +76,7 @@ def loader1(config, data):
                            'locations.value.[1].geolocation.lattitude.value',
                            'locations.value.[1].geolocation.longitude.value',
                            'firstname.value', 'lastname.value']
-        if data['path'] in encrypted_paths:
+        if kwargs['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
         return test_pk
@@ -150,10 +150,10 @@ def test_can_write_read_objects(root_store, base_item):
     assert o.birth_details.hospital == 'Good one'
     assert o.__primary_key == test_pk
 
-def loader2(config, data):
+def loader2(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        assert 'path' in data
-        assert 'root' in data
+        assert 'path' in kwargs
+        assert 'data' in kwargs
         encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
                            'locations.value.[0].city.value', 'locations.value.[0].country.value',
                            'locations.value.[1].city.value', 'locations.value.[1].country.value',
@@ -162,7 +162,7 @@ def loader2(config, data):
                            'locations.value.[1].geolocation.lattitude.value',
                            'locations.value.[1].geolocation.longitude.value',
                            'firstname.value', 'lastname.value']
-        if data['path'] in encrypted_paths:
+        if kwargs['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
         return test_pk
@@ -171,7 +171,7 @@ def loader2(config, data):
     elif config == DyObject.CONFIG_LOADER_DICT_TO_CLASS:
         # In this case we can just use the dict key to determine what kind of object it is
         # other cases might require examining the value
-        key = data['key']
+        key = kwargs['key']
         if key == 'location':
             return Location
         elif key == 'birth_details':
@@ -200,7 +200,7 @@ def test_can_guess_objects(root_store, base_item):
     assert o.birth_details.hospital == 'Kosei Nenkin'
     assert o.__primary_key == test_pk
 
-def loader_no_encryption(config, data):
+def loader_no_encryption(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
         return None
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
@@ -210,7 +210,7 @@ def loader_no_encryption(config, data):
     elif config == DyObject.CONFIG_LOADER_DICT_TO_CLASS:
         # In this case we can just use the dict key to determine what kind of object it is
         # other cases might require examining the value
-        key = data['key']
+        key = kwargs['key']
         if key == 'location':
             return Location
         elif key == 'birth_details':
@@ -262,10 +262,10 @@ class BaseMultipleLocation(DyObject):
     birth_details = fields.EmbeddedField(BirthDetails, default=BirthDetails())
     address = None
 
-def loader3(config, data):
+def loader3(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        assert 'path' in data
-        assert 'root' in data
+        assert 'path' in kwargs
+        assert 'data' in kwargs
         encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
                            'locations.value.[0].city.value', 'locations.value.[0].country.value',
                            'locations.value.[1].city.value', 'locations.value.[1].country.value',
@@ -274,7 +274,7 @@ def loader3(config, data):
                            'locations.value.[1].geolocation.lattitude.value',
                            'locations.value.[1].geolocation.longitude.value',
                            'firstname.value', 'lastname.value']
-        if data['path'] in encrypted_paths:
+        if kwargs['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
         return False
@@ -352,11 +352,11 @@ class BaseMixedShards(DyObject):
     lines = fields.ListField(items_types=[JustAShard])
     address = None
 
-def loader4(config, data):
+def loader4(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        assert 'path' in data
-        assert 'root' in data
         from dynamo_store.util import logger
+        assert 'path' in kwargs
+        assert 'data' in kwargs
         encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
                            'locations.value.[0].city.value', 'locations.value.[0].country.value',
                            'locations.value.[1].city.value', 'locations.value.[1].country.value',
@@ -367,8 +367,7 @@ def loader4(config, data):
                            'firstname.value', 'lastname.value', 'info.line.value', 'info.data.value', 'info.value',
                            'lines.value[0].line', 'lines.value[0].data', 'lines.value[1].line', 'lines.value[1].data']
         logger.info('> %s' % data['path'])
-        if data['path'] in encrypted_paths:
-            logger.info('== %s' % data['path'])
+        if kwargs['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
         return False
@@ -453,12 +452,12 @@ class BaseDeepMixedShards(DyObject):
     title = fields.EmbeddedField(Title, default=Title())
     info = fields.ListField(items_types=[Line])
 
-def loader5(config, data):
+def loader5(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        assert 'path' in data
-        assert 'root' in data
         from dynamo_store.util import logger
-        path = data['path']
+        assert 'path' in kwargs
+        assert 'data' in kwargs
+        path = kwargs['path']
         unencrypted_paths = ['__module__', '__class__', '__metatype__']
         for p in unencrypted_paths:
             if p in path:

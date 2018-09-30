@@ -28,7 +28,7 @@ The root and shard DyObjects should implement the following class variables when
 Otherwise the above class variables are all optional.
 
 #### Config Loading
-The `config_loader(config, data)` is a callback that is used in DyStore and DyObject calls to control certain operations of dynamo-store. The first parameter `config` specifies which configuration item is being queried, and the second parameter `data` is context sensitive data for the call.
+The `config_loader(config, **kwargs)` is a callback that is used in DyStore and DyObject calls to control certain operations of dynamo-store. The first parameter `config` specifies which configuration item is being queried, and the rest of the keyword arguments are context sensitive data for the call.
 
 The `config` parameter will be one of the `CONFIG_LOADER_*` class variables defined in DyStore or DyObject, they are documented in the API documentation below.
 
@@ -45,10 +45,11 @@ def root_store():
               DyStore('Shard2', 'IDX', path='$.location')]
     return DyStore('Root', 'ID', shards=shards)
 
-def loader(config, data):
+def loader(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
-        if data in encrypted_paths:
+        path = kwargs['path']
+        if path in encrypted_paths:
             return 'somekey'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
         return False
@@ -112,17 +113,18 @@ class Root(DyObject):
     location = fields.EmbeddedField(Location)
     birth_details = fields.EmbeddedField(BirthDetails)
 
-def loader(config, data):
+def loader(config, **kwargs):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
-        encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
-        if data in encrypted_paths:
+        encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value', 'location.city.value', 'location.country.value', 'firstname.value', 'lastname.value']
+        path = kwargs['path']
+        if path in encrypted_paths:
             return 'somekey'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
         return False
     elif config == DyObject.CONFIG_LOADER_DICT_TO_CLASS:
         # In this case we can just use the dict key to determine what kind of object it is
         # other cases might require examining the value
-        key = data['key']
+        key = kwargs['key']
         if key == 'location':
             return Location
         elif key == 'birth_details':
@@ -158,8 +160,8 @@ print(o.birth_details.hospital)
 class DyStore(object):
     """
     Invoked on writes to allow control of primary key.
-    config_loader(DyStore.CONFIG_LOADER_GENERATE_PK, item)
-    :param key: DyStore.CONFIG_LOADER_GENERATE_PK
+    config_loader(DyStore.CONFIG_LOADER_GENERATE_PK, data=item)
+    :param config: DyStore.CONFIG_LOADER_GENERATE_PK
     :param data: item being written
     :returns: string containing primary key to use, None to use uuid4()
     """
@@ -167,17 +169,18 @@ class DyStore(object):
 
     """
     Invoked on decryption/encryption to control key used.
-    config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, path)
-    :param key: DyStore.CONFIG_LOADER_LOAD_KEY
-    :param data: json path of item being encrypted/decrypted
+    config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, path=path, data=root)
+    :param config: DyStore.CONFIG_LOADER_LOAD_KEY
+    :param path: json path of item being encrypted/decrypted
+    :param data: root object being encrypted/decrypted
     :returns: string containing key to use, None to ignore decryption/encryption
     """
     CONFIG_LOADER_LOAD_KEY = 'key'
 
     """
     Invoked on read/write to control if DyStore metadata should be kept in object.
-    config_loader(DyStore.CONFIG_LOADER_KEEP_METADATA, item)
-    :param key: DyStore.CONFIG_LOADER_KEEP_METADATA
+    config_loader(DyStore.CONFIG_LOADER_KEEP_METADATA, data=item)
+    :param config: DyStore.CONFIG_LOADER_KEEP_METADATA
     :param data: item being read/written
     :returns: bool controlling if metadata should be kept or not
     """
@@ -270,9 +273,10 @@ class DyObject(object):
 
     """
     Invoked on object load when class cant be determined.
-    config_loader(DyObject.CONFIG_LOADER_DICT_TO_KEY, {'key': key, 'value': value})
-    :param key: DyObject.CONFIG_LOADER_DICT_TO_CLASS
-    :param data: key in parent object, value of dict in object
+    config_loader(DyObject.CONFIG_LOADER_DICT_TO_KEY, key=key, value=value)
+    :param config: DyObject.CONFIG_LOADER_DICT_TO_CLASS
+    :param key: key in parent object
+    :param value: value of dict in object
     :returns: Class to instantiate, None if to keep as dict
     """
     CONFIG_LOADER_DICT_TO_CLASS = 'dict'
