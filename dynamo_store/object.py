@@ -2,6 +2,10 @@ from dynamo_store.store import DyStore
 from dynamo_store.log import logger
 import importlib
 from jsonmodels import models, fields, errors, validators
+import builtins
+import importlib
+
+builtin_types = tuple(getattr(builtins, t) for t in dir(builtins) if isinstance(getattr(builtins, t), type))
 
 class DyObject(models.Base):
     """
@@ -46,9 +50,70 @@ class DyObject(models.Base):
                        shards=shards,
                        region=cls.REGION_NAME)
 
+    @classmethod
+    def _value_from_meta(cls, meta):
+        klass = meta['__class__']
+        module = meta['__module__']
+        module = importlib.import_module(module)
+        class_ = getattr(module, klass)
+
+        new = class_(meta['value'])
+        return new
+
+    @staticmethod
+    def _is_value_meta_dict(meta):
+        if not isinstance(meta, dict):
+            return False
+        return meta.get('__class__') and meta.get('__module__') and meta.get('__metatype__') == 'value'
+
+    @staticmethod
+    def _is_shard_meta_dict(meta):
+        if not isinstance(meta, dict):
+            return False
+        return meta.get('__class__') and meta.get('__module__') and meta.get('__metatype__') == 'shard'
+
+    @staticmethod
+    def _value_to_classinfo(value):
+        d = {}
+        if isinstance(value, type):
+            if value in builtin_types:
+                d['__class__'] = value.__qualname__
+                d['__module__'] = 'builtins'
+            else:
+                d['__class__'] = value.__qualname__
+                d['__module__'] = value.__module__
+        else:
+            if isinstance(value, builtin_types):
+                d['__class__'] = value.__class__.__qualname__
+                d['__module__'] = 'builtins'
+            else:
+                d['__class__'] = value.__class__.__qualname__
+                d['__module__'] = value.__module__
+        return d
+
+    @staticmethod
+    def _check_value_meta_type(meta, type_):
+        if not DyObject._is_value_meta_dict(meta):
+            return False
+
+        classinfo = DyObject._value_to_classinfo(type_)
+        return meta.get('__class__') == classinfo.get('__class__') and \
+               meta.get('__module__') == classinfo.get('__module__')
+
+    @staticmethod
+    def _meta_value(meta):
+        return meta['value']
+
+    def _value_to_meta(self, value):
+        d = DyObject._value_to_classinfo(value)
+        d['value'] =  value
+        d['__metatype__'] = 'value'
+        return d
+
     def to_dict(self, path="", shards=None):
         d = {'__class__': self.__class__.__qualname__,
-             '__module__': self.__module__}
+             '__module__': self.__module__,
+             '__metatype__': 'shard'}
         ignore_keys = ['CONFIG_LOADER', 'CONFIG_LOADER_DICT_TO_CLASS', 'IGNORE_LIST', 'REGION_NAME', 'TABLE_NAME', 'PRIMARY_KEY_NAME'] \
                         + self.IGNORE_LIST
         logger.debug(self.to_struct())
@@ -61,12 +126,12 @@ class DyObject(models.Base):
                 continue
 
             if isinstance(value, list):
-                d[name] = [None] * len(value)
+                value_list = [None] * len(value)
                 for index in range(len(value)):
                     v = value[index]
                     if isinstance(v, DyObject):
                         if v.TABLE_NAME and v.PRIMARY_KEY_NAME and v.REGION_NAME:
-                            p = "%s.%s[%d]" % (path, name, index)
+                            p = "%s.%s.value[%d]" % (path, name, index)
                             shard = DyStore(table_name=v.TABLE_NAME,
                                             primary_key_name=v.PRIMARY_KEY_NAME,
                                             path=p,
@@ -74,9 +139,10 @@ class DyObject(models.Base):
                             shards.append(shard)
                             logger.debug('Found shard: %s' % p)
 
-                        d[name][index] = v.to_dict(path="$", shards=shards)
+                        value_list[index] = v.to_dict(path="$", shards=shards)
                     else:
-                        d[name][index] = v
+                        value_list[index] = self._value_to_meta(v)
+                d[name] = self._value_to_meta(value_list)
             else:
                 if isinstance(value, DyObject):
                     if value.TABLE_NAME and value.PRIMARY_KEY_NAME and value.REGION_NAME:
@@ -89,7 +155,8 @@ class DyObject(models.Base):
                         logger.debug('Found shard: %s' % p)
                     d[name] = value.to_dict(path="$", shards=shards)
                 else:
-                    d[name] = value
+                    d[name] = self._value_to_meta(value)
+
         return d
 
     @classmethod
@@ -127,16 +194,23 @@ class DyObject(models.Base):
             if key in ignore_keys:
                 continue
 
-            if isinstance(value, list):
+            if DyObject._check_value_meta_type(value, list):
+                value = DyObject._meta_value(value)
                 items = [None] * len(value)
                 for index in range(len(value)):
                     v = value[index]
-                    items[index] = cls._load_dict(key, v, config_loader)
+                    if DyObject._is_shard_meta_dict(v):
+                        items[index] = cls._load_dict(key, v, config_loader)
+                    elif DyObject._is_value_meta_dict(v):
+                        items[index] = DyObject._value_from_meta(v)
+                    else:
+                        items[index] = v
                 setattr(obj, key, items)
-
-            elif isinstance(value, dict):
+            elif isinstance(value, dict) and not DyObject._is_value_meta_dict(value):
                 setattr(obj, key, cls._load_dict(key, value, config_loader))
-            elif key not in ['__class__', '__module__']:
+            elif DyObject._is_value_meta_dict(value):
+                setattr(obj, key, cls._value_from_meta(value))
+            else:
                 setattr(obj, key, value)
         return obj
 

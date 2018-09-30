@@ -5,6 +5,7 @@ from uuid import uuid4
 from copy import deepcopy
 import sys
 from jsonmodels import fields
+from jsonpath_ng import jsonpath, parse
 
 test_pk = ".".join([str(x) for x in sys.version_info[0:3]])
 
@@ -67,7 +68,14 @@ def loader1(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
         assert 'path' in data
         assert 'root' in data
-        encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
+        encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
+                           'locations.value.[0].city.value', 'locations.value.[0].country.value',
+                           'locations.value.[1].city.value', 'locations.value.[1].country.value',
+                           'locations.value.[0].geolocation.lattitude.value',
+                           'locations.value.[0].geolocation.longitude.value',
+                           'locations.value.[1].geolocation.lattitude.value',
+                           'locations.value.[1].geolocation.longitude.value',
+                           'firstname.value', 'lastname.value']
         if data['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
@@ -146,7 +154,14 @@ def loader2(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
         assert 'path' in data
         assert 'root' in data
-        encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
+        encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
+                           'locations.value.[0].city.value', 'locations.value.[0].country.value',
+                           'locations.value.[1].city.value', 'locations.value.[1].country.value',
+                           'locations.value.[0].geolocation.lattitude.value',
+                           'locations.value.[0].geolocation.longitude.value',
+                           'locations.value.[1].geolocation.lattitude.value',
+                           'locations.value.[1].geolocation.longitude.value',
+                           'firstname.value', 'lastname.value']
         if data['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
@@ -251,7 +266,14 @@ def loader3(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
         assert 'path' in data
         assert 'root' in data
-        encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country', 'firstname', 'lastname']
+        encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
+                           'locations.value.[0].city.value', 'locations.value.[0].country.value',
+                           'locations.value.[1].city.value', 'locations.value.[1].country.value',
+                           'locations.value.[0].geolocation.lattitude.value',
+                           'locations.value.[0].geolocation.longitude.value',
+                           'locations.value.[1].geolocation.lattitude.value',
+                           'locations.value.[1].geolocation.longitude.value',
+                           'firstname.value', 'lastname.value']
         if data['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
@@ -313,6 +335,10 @@ class NotAShard(DyObject):
     data = fields.StringField()
     geo = fields.EmbeddedField(GeoLocation, default=GeoLocation())
 
+class JustAShard(DyObject):
+    line = fields.IntField()
+    data = fields.StringField()
+
 class BaseMixedShards(DyObject):
     TABLE_NAME = 'DynamoStoreRootDB'
     REGION_NAME = 'us-east-2'
@@ -323,15 +349,26 @@ class BaseMixedShards(DyObject):
     locations = fields.ListField([Location])
     birth_details = fields.EmbeddedField(BirthDetails, default=BirthDetails())
     info = fields.EmbeddedField(NotAShard, default=NotAShard())
+    lines = fields.ListField(items_types=[JustAShard])
     address = None
 
 def loader4(config, data):
     if config == DyStore.CONFIG_LOADER_LOAD_KEY:
         assert 'path' in data
         assert 'root' in data
-        encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country',
-                            'firstname', 'lastname', 'info.line', 'info.data']
+        from dynamo_store.util import logger
+        encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
+                           'locations.value.[0].city.value', 'locations.value.[0].country.value',
+                           'locations.value.[1].city.value', 'locations.value.[1].country.value',
+                           'locations.value.[0].geolocation.lattitude.value',
+                           'locations.value.[0].geolocation.longitude.value',
+                           'locations.value.[1].geolocation.lattitude.value',
+                           'locations.value.[1].geolocation.longitude.value',
+                           'firstname.value', 'lastname.value', 'info.line.value', 'info.data.value', 'info.value',
+                           'lines.value[0].line', 'lines.value[0].data', 'lines.value[1].line', 'lines.value[1].data']
+        logger.info('> %s' % data['path'])
         if data['path'] in encrypted_paths:
+            logger.info('== %s' % data['path'])
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
         return False
@@ -376,6 +413,8 @@ def test_can_read_write_mixed_shard(root_store, base_item):
     assert isinstance(o.info.geolocation, GeoLocation)
     assert orig.info.geolocation.lattitude == '34.0'
     assert orig.info.geolocation.longitude == '30.0'
+    assert isinstance(o.lines, list)
+    assert len(orig.lines) == 0
 
     assert isinstance(o.locations, list)
     assert len(o.locations) == 2
