@@ -306,7 +306,7 @@ class DyStore(object):
                 primary_key = str(uuid4())
 
         key = {self._primary_key_name: primary_key}
-        data.setdefault(self._primary_key_name, primary_key)
+        data[self._primary_key_name] =  primary_key
         logger.debug('Writing: %s' % key)
         logger.debug('Save Shards: %s' % save_shards)
 
