@@ -504,3 +504,58 @@ def test_can_read_write_deepmixed_shard(root_store, base_item):
     assert o.info[1].lineinfo.geo.lattitude == '52.0'
     assert o.info[1].lineinfo.geo.longitude == '51.0'
     assert o.__primary_key == key
+
+def loader_no_pk(config, **kwargs):
+    if config == DyStore.CONFIG_LOADER_LOAD_KEY:
+        assert 'path' in kwargs
+        assert 'data' in kwargs
+        encrypted_paths = ['birth_details.hospital.value', 'birth_details.dob.value',
+                           'locations.value.[0].city.value', 'locations.value.[0].country.value',
+                           'locations.value.[1].city.value', 'locations.value.[1].country.value',
+                           'locations.value.[0].geolocation.lattitude.value',
+                           'locations.value.[0].geolocation.longitude.value',
+                           'locations.value.[1].geolocation.lattitude.value',
+                           'locations.value.[1].geolocation.longitude.value',
+                           'firstname.value', 'lastname.value']
+        if kwargs['path'] in encrypted_paths:
+            return '123kgk132l'
+    elif config == DyStore.CONFIG_LOADER_KEEP_METADATA:
+        return False
+
+    return None
+
+def test_can_write_read_delete_read_objects_with_key(root_store, base_item):
+    orig = Base(location = Location(geolocation=GeoLocation()), birth_details=BirthDetails())
+    orig.address = '123 fake st'
+    orig.firstname = 'john'
+    orig.lastname = 'smith'
+    orig.location.city = 'Osaka'
+    orig.location.country = 'Kewpie'
+    orig.location.geolocation.lattitude = '99.1'
+    orig.location.geolocation.longitude = '000.1'
+    orig.birth_details.dob = '15/03/1980'
+    orig.birth_details.hospital = 'Good one'
+    key = orig.save(primary_key=test_pk, config_loader=loader_no_pk)
+    assert orig.__primary_key == test_pk
+
+    o = Base.load(test_pk, config_loader=loader_no_pk)
+    assert o.address == None
+    assert o.firstname == 'john'
+    assert o.lastname == 'smith'
+    assert isinstance(o.location, Location)
+    assert o.location.city == 'Osaka'
+    assert o.location.country == 'Kewpie'
+    assert isinstance(o.location.geolocation, GeoLocation)
+    assert o.location.geolocation.lattitude == '99.1'
+    assert o.location.geolocation.longitude == '000.1'
+    assert isinstance(o.birth_details, BirthDetails)
+    assert o.birth_details.dob == '15/03/1980'
+    assert o.birth_details.hospital == 'Good one'
+    assert o.__primary_key == test_pk
+
+    assert orig.delete(primary_key=test_pk, config_loader=loader_no_pk)
+
+    try:
+        assert Base.load(primary_key=test_pk, config_loader=loader_no_pk) != None
+    except:
+        assert True
