@@ -239,8 +239,9 @@ class DyObject(models.Base):
         if self.store(shards=shards).delete(primary_key, config_loader=config_loader):
             logger.debug('Storing pk %s' % primary_key)
             setattr(self, '__primary_key', primary_key)
+            return True
 
-        return True
+        return False
 
     def save(self, primary_key=None, config_loader=None):
         """
