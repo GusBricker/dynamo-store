@@ -223,7 +223,7 @@ class DyObject(models.Base):
         :returns: True if successful, False otherwise
         """
         shards = []
-        d = self.to_dict(path="$", shards=shards)
+        self.to_dict(path="$", shards=shards)
         logger.debug(shards)
 
         if not primary_key:
@@ -236,7 +236,7 @@ class DyObject(models.Base):
             if cls.CONFIG_LOADER and callable(cls.CONFIG_LOADER):
                 config_loader = cls.CONFIG_LOADER
 
-        if self.store(shards=shards).delete(d, primary_key, config_loader=config_loader):
+        if self.store(shards=shards).delete(primary_key, config_loader=config_loader):
             logger.debug('Storing pk %s' % primary_key)
             setattr(self, '__primary_key', primary_key)
 
