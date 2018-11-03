@@ -1,4 +1,5 @@
 import boto3
+import re
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from dynamo_store.log import logger
@@ -39,13 +40,14 @@ class DyStore(object):
     """
     CONFIG_LOADER_KEEP_METADATA = 'meta'
 
-    def __init__(self, table_name=None, primary_key_name=None, path=None, shards=[], region='us-east-2'):
+    def __init__(self, table_name=None, primary_key_name=None, path=None, shards=[], region='us-east-2', ignore_paths=[]):
         """
         :param table_name: Name of DynamoDB table this object will access
         :param primary_key_name: Primary key name in DynamoDB
         :param path: JSON Path of this object when it is used in a shard, note: see jsonpath-ng for documentation on jsonpath.
         :param shards: Items to shard out to other tables in this object.
         :param region: AWS region for table.
+        :param ignore_paths: Paths to ignore during encryption/decryption, can be regexes
         """
         if table_name and region:
             dynamodb = boto3.resource("dynamodb", region_name=region)
@@ -53,6 +55,9 @@ class DyStore(object):
             self.table = dynamodb.Table(table_name)
         self._primary_key_name = primary_key_name
         self._shards = shards
+        self._ignore_paths = ['.*%s.*' % self.METADATA_KEY] + ignore_paths
+        if primary_key_name:
+            self._ignore_paths.append(primary_key_name)
         self.path = path
 
     @staticmethod
@@ -86,12 +91,26 @@ class DyStore(object):
             return loader(config, **kwargs)
         return None
 
+    def _can_crypto_path(self, path):
+        for pattern in self._ignore_paths:
+            r = re.search(pattern, path)
+            if r:
+                logger.debug('Crypto ignored for: %s' % path)
+                return False
+        return True
+
     def _decrypt(self, root_object, config_loader):
         if not config_loader or not callable(config_loader):
             return
 
         for encrypted_value in util.generate_paths(root_object):
             path = str(encrypted_value.full_path)
+            if not self._can_crypto_path(path):
+                continue
+
+            if not self._can_crypto_type(encrypted_value.value):
+                continue
+
             key = config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, path=path, data=root_object)
             if key:
                 cipher = AESCipher(key)
@@ -108,6 +127,13 @@ class DyStore(object):
             return
         for unencrypted_value in util.generate_paths(root_object):
             path = str(unencrypted_value.full_path)
+            if not self._can_crypto_path(path):
+                continue
+
+            if not self._can_crypto_type(unencrypted_value.value):
+                logger.debug('Crypto ignored for: %s (%s)' % (path, unencrypted_value.value))
+                continue
+
             key = config_loader(DyStore.CONFIG_LOADER_LOAD_KEY, path=path, data=root_object)
             if key:
                 cipher = AESCipher(key)

@@ -34,6 +34,11 @@ class DyObject(models.Base):
     IGNORE_LIST = []
 
     """
+    Variable names to ignore during encryption/decryption
+    """
+    CRYPTO_IGNORE_PATHS = []
+
+    """
     Invoked on object load when class cant be determined.
     config_loader(DyObject.CONFIG_LOADER_DICT_TO_KEY, key=key, value=value)
     :param config: DyObject.CONFIG_LOADER_DICT_TO_CLASS
@@ -45,11 +50,17 @@ class DyObject(models.Base):
 
     @classmethod
     def store(cls, shards, path=None):
+        enc_ignore_paths = [r'.*__class__.*',
+                            r'.*__module__.*',
+                            r'.*__metatype__.*'] + \
+                            cls.CRYPTO_IGNORE_PATHS
+
         return DyStore(table_name=cls.TABLE_NAME,
                        primary_key_name=cls.PRIMARY_KEY_NAME,
                        path=path,
                        shards=shards,
-                       region=cls.REGION_NAME)
+                       region=cls.REGION_NAME,
+                       ignore_paths=enc_ignore_paths)
 
     @classmethod
     def _value_from_meta(cls, meta):
@@ -118,8 +129,8 @@ class DyObject(models.Base):
         d = {'__class__': self.__class__.__qualname__,
              '__module__': self.__module__,
              '__metatype__': 'shard'}
-        ignore_keys = ['CONFIG_LOADER', 'CONFIG_LOADER_DICT_TO_CLASS', 'IGNORE_LIST', 'REGION_NAME', 'TABLE_NAME', 'PRIMARY_KEY_NAME'] \
-                        + self.IGNORE_LIST
+        ignore_keys = ['CONFIG_LOADER', 'CONFIG_LOADER_DICT_TO_CLASS', 'IGNORE_LIST', 'REGION_NAME', 'TABLE_NAME', 'PRIMARY_KEY_NAME',
+                       'CRYPTO_IGNORE_PATHS'] + self.IGNORE_LIST
         logger.debug(self.to_struct())
         for name in dir(self):
             if name in ignore_keys:
