@@ -210,7 +210,7 @@ class DyObject(models.Base):
                 continue
 
             if DyObject._check_value_meta_type(value, list):
-                value = DyObject._meta_value(value)
+                value = DyObject._value_from_meta(value)
                 items = [None] * len(value)
                 for index in range(len(value)):
                     v = value[index]
