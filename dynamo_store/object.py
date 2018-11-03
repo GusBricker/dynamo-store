@@ -55,11 +55,14 @@ class DyObject(models.Base):
     def _value_from_meta(cls, meta):
         klass = meta['__class__']
         module = meta['__module__']
-        module = importlib.import_module(module)
-        class_ = getattr(module, klass)
+        if module == 'builtins' and klass == 'NoneType':
+            return None
+        else:
+            module = importlib.import_module(module)
+            class_ = getattr(module, klass)
 
-        new = class_(meta['value'])
-        return new
+            new = class_(meta['value'])
+            return new
 
     @staticmethod
     def _is_value_meta_dict(meta):
