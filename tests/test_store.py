@@ -64,7 +64,7 @@ def loader_full_encryption(config, **kwargs):
         assert 'data' in kwargs
         encrypted_paths = ['birth_details.hospital', 'birth_details.dob', 'location.city', 'location.country',
                            'firstname', 'lastname', 'location.geolocation.longitude', 'location.geolocation.lattitude',
-                           'friends', 'locales.[0].type', 'locales.[1].type', 'locales.[2].type']
+                           'friends.[0]', 'friends.[1]', 'locales.[0].type', 'locales.[1].type', 'locales.[2].type']
         if kwargs['path'] in encrypted_paths:
             return '123kgk132l'
     elif config == DyStore.CONFIG_LOADER_GENERATE_PK:
@@ -123,7 +123,7 @@ def test_encryption(root_store, complex_item):
     assert isinstance(readback['birth_details']['dob'], Binary)
     assert readback['birth_details']['dob'] != complex_item['birth_details']['dob']
 
-    assert isinstance(readback['friends'], Binary)
+    assert isinstance(readback['friends'], list)
     assert readback['friends'] != complex_item['friends']
 
     assert len(readback['locales']) == 3

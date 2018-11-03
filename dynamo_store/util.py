@@ -21,9 +21,12 @@ def generate_paths(root_object):
             yield a
 
             for c in b:
-                if isinstance(c.value, dict):
+                if isinstance(c.value, list) or isinstance(c.value, dict):
                     logger.debug('%s: [%s]' % (str(c.full_path), type(c.value)))
                     yield from generate_paths(c)
+                else:
+                    logger.debug('%s: [%s]' % (str(c.full_path), type(c.value)))
+                    yield c
         elif isinstance(a.value, dict):
             yield from generate_paths(a)
         else:

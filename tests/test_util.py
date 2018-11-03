@@ -56,10 +56,12 @@ def test_generate_second_level_non_dict_list_paths():
     logger.debug(d)
     p = [str(x.full_path) for x in util.generate_paths(d)]
     logger.debug(p)
-    assert len(p) == 3
+    assert len(p) == 5
     assert 'firstname' in p
     assert 'lastname' in p
     assert 'person.locations' in p
+    assert 'person.locations.[0]' in p
+    assert 'person.locations.[1]' in p
 
 def test_generate_second_level_paths():
     d = {'firstname': 'john',
@@ -81,3 +83,16 @@ def test_generate_second_level_paths():
     assert 'birth_details.dob' in p
     assert 'location.geolocation.longitude' in p
     assert 'location.geolocation.lattitude' in p
+
+def test_generate_list_paths():
+    d = {'firstname': 'john',
+         'lastname': 'smith',
+         'friends': ['john', 'bob']}
+    p = [str(x.full_path) for x in util.generate_paths(d)]
+    logger.debug(p)
+    assert len(p) == 5
+    assert 'firstname' in p
+    assert 'lastname' in p
+    assert 'friends' in p
+    assert 'friends.[0]' in p
+    assert 'friends.[1]' in p
