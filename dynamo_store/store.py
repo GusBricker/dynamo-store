@@ -91,6 +91,15 @@ class DyStore(object):
             return loader(config, **kwargs)
         return None
 
+    def _can_crypto_type(self, value):
+        # We dont encrypt these iterable types themselves, instead we encrypt their contents!
+        ignored_types = [list, set, dict, tuple]
+        for ig_type in ignored_types:
+            if isinstance(value, ig_type):
+                logger.debug('Crypto ignored for: %s' % value)
+                return False
+        return True
+
     def _can_crypto_path(self, path):
         for pattern in self._ignore_paths:
             r = re.search(pattern, path)
