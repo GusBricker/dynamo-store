@@ -329,6 +329,27 @@ def test_can_write_read_multisharded_object(root_store, base_item):
     assert o.birth_details.hospital == 'Good one'
     assert o.__primary_key == key
 
+def test_can_write_read_multisharded_object_empty_list(root_store, base_item):
+    orig = BaseMultipleLocation(birth_details=BirthDetails())
+    orig.address = '123 fake st'
+    orig.firstname = 'john'
+    orig.lastname = 'smith'
+
+    orig.birth_details.dob = '15/03/1980'
+    orig.birth_details.hospital = 'Good one'
+    key = orig.save(config_loader=loader3)
+    assert orig.__primary_key == key
+
+    o = BaseMultipleLocation.load(key, config_loader=loader3)
+    assert o.address == None
+    assert o.firstname == 'john'
+    assert o.lastname == 'smith'
+
+    assert isinstance(o.birth_details, BirthDetails)
+    assert o.birth_details.dob == '15/03/1980'
+    assert o.birth_details.hospital == 'Good one'
+    assert o.__primary_key == key
+
 class NotAShard(DyObject):
     line = fields.IntField()
     data = fields.StringField()
