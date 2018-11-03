@@ -241,7 +241,10 @@ class DyObject(models.Base):
         logger.debug(shards)
 
         if not primary_key:
-            primary_key = getattr(self, '__primary_key', None)
+            primary_key = getattr(self, self.PRIMARY_KEY_NAME, None)
+            if not primary_key:
+                primary_key = getattr(self, '__primary_key', None)
+
             if primary_key:
                 logger.debug('Found existing pk %s' % primary_key)
 
@@ -269,9 +272,12 @@ class DyObject(models.Base):
         logger.debug(shards)
 
         if not primary_key:
-            primary_key = getattr(self, '__primary_key', None)
+            primary_key = getattr(self, self.PRIMARY_KEY_NAME, None)
+            if not primary_key:
+                primary_key = getattr(self, '__primary_key', None)
+
             if primary_key:
-                logger.debug('Found existing pk %s' % primary_key)
+                logger.info('Found existing pk %s' % primary_key)
 
         cls = self.__class__
         if not config_loader or not callable(config_loader):
