@@ -19,6 +19,9 @@ class AESCipher(object):
         if isinstance(enc, Binary):
             enc = enc.value
 
+        if not enc1:
+            return enc1
+
         iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         data = self._unpad(cipher.decrypt(enc[AES.block_size:]))
