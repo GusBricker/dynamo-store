@@ -193,6 +193,7 @@ class DyStore(object):
         :param path: JSON Path of this object when it is used in a shard, note: see jsonpath-ng for documentation on jsonpath.
         :param shards: Items to shard out to other tables in this object.
         :param region: AWS region for table.
+        :param ignore_paths: Paths to ignore during encryption/decryption, can be regexes
         """
 
     def read_path(self, primary_key, path, config_loader=None):
@@ -270,6 +271,11 @@ class DyObject(object):
     Variable names to ignore during serialization
     """
     IGNORE_LIST = []
+
+    """
+    Variable names to ignore during encryption/decryption
+    """
+    CRYPTO_IGNORE_PATHS = []
 
     """
     Invoked on object load when class cant be determined.
